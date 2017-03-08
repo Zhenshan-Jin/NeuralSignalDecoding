@@ -32,7 +32,7 @@ timeIntervals = FeatureGeneration.AlignmentPoint(rawIntervals)# create split poi
 #==============================================================================
 # parameters
 featureList = ['mean']
-nodeIdx = [0] # start from 0 to 69(70 in total)
+nodeIdx = [60] # start from 0 to 69(70 in total)
 frequency = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']# ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']
 
 # generation

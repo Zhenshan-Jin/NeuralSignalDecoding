@@ -109,6 +109,8 @@ def FeatureDF(featureList, sentences, ecogSlice, timeIntervals):
     return totalFeatureDf
 
 def FeatureNodeFreq(ecogTrain, sentenceTrain, nodeIdx, frequency, featureList, timeIntervals):
+    '''Generate the features for the selected frequencies and nodes'''
+    
     frequencyName = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']
     freqIdx = [frequencyName.index(freq) for freq in frequency]
     
