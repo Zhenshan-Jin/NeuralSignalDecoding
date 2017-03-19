@@ -12,6 +12,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import NullFormatter
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar 18 21:03:28 2017
+
+@author: zhenshan
+"""
+
 
 from sklearn import manifold
 
