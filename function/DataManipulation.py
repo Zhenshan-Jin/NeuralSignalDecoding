@@ -13,10 +13,7 @@ import pickle
 from joblib import Parallel, delayed
 import multiprocessing as mp
 from functools import partial
-# user-definedimport pandas as pd
-import numpy as np
-
-import FeatureGeneration
+# user-defined
 import SentenceSegmentation
 
 
@@ -39,9 +36,10 @@ def ScalingBySilence(ecogTrain, rawIntervals):
         
     return ecogTrainScaled
 
+
 def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
     '''Getting scaled data for each of 420 frequencies'''
-    phoneSegmentation = FeatureGeneration.NeuralSignalSegmentation(phoneSplits_, ecogSeries, timeInterval_)
+    phoneSegmentation = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits_, ecogSeries, timeInterval_)
     silence = pd.Series(name = ecogSeries.name)
     for sil in phoneSegmentation['sil']:
         silence = silence.append(sil['signalData'])

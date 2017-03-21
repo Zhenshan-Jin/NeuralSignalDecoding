@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import pickle # Export python data 
 
+
 def AlignmentPoint(rawData_):
     '''Extract sentence/word/phone time intervals from rawIntervals
        {Key1: sentence, Value1: phone time interval data frame}'''
@@ -45,6 +46,7 @@ def AlignmentPoint(rawData_):
         
     return sentence
 
+
 def SplitPoint(rawTimeInterval_, neuralSignalLen):
     '''generate the splitting points for each phone in the sentence by proportion'''
     rawTimeInterval_.ix[:,[0,1]] = rawTimeInterval_.ix[:,[0,1]].apply(pd.to_numeric) # transform string to number
@@ -54,6 +56,7 @@ def SplitPoint(rawTimeInterval_, neuralSignalLen):
     phoneTimes = [round(x) for x in list(proportion * neuralSignalLen)]
     
     return phoneTimes
+
 
 def NeuralSignalSegmentation(phoneTimes_, neuralSignal_, timeInterval_):
     '''Generate series for phones in each word'''

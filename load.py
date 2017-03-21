@@ -12,6 +12,7 @@ import numpy as np
 import h5py
 import util # user-defined module
 
+
 def loadPhone():
     '''Reading the raw phone data for each sentence from .txt'''
     # switch to data directory
@@ -27,6 +28,7 @@ def loadPhone():
         os.chdir(owd)
     
     return rawData_
+
 
 def loadOrderedSentence():
     '''Reading sentences from .txt'''
@@ -44,16 +46,21 @@ def loadOrderedSentence():
 
     return sentence
 
+
 def loadEcog():
     '''Function: Create Dictionary for each sentence with corresponding phone'''
     '''Method: Reading large dataset by pandas chunck and store in HDF5'''
+    sentences = loadOrderedSentence()
     # switch to data directory
     owd = os.getcwd()
     dataDir = owd + '/data'
     os.chdir(dataDir)
     
     # read data
-    try:timeIntervals = FeatureGeneration.AlignmentPoint(rawIntervals)# create split point data frame
+    breakPoint = [int(index) for index in open('train_breakpoint.txt').readlines()]
+    breakPoint.insert(0,0)
+    try:
+#        timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
         #Read data from HDF5 database
         h5f_read = h5py.File('ecog_training.h5','r')
         train_X_ecog = np.array(h5f_read.get('train_data'))
@@ -61,11 +68,8 @@ def loadEcog():
         
         os.chdir(owd) # switch back to base directory
     except IOError:
-        print('create a new HDF5 database')
+        print('create a new HDF5 database for training data')
         try:
-            breakPoint = [int(index) for index in open('train_breakpoint.txt').readlines()]
-            breakPoint.insert(0,0)
-            
             # Reading large dataset by chunck and store in HDF5
             h5f = h5py.File('ecog_training.h5', 'w')
             
@@ -82,11 +86,11 @@ def loadEcog():
             h5f.close()
     
             os.chdir(owd) 
-            sentences = loadOrderedSentence()
         except IOError:
             print('Unknown error')
             os.chdir(owd)
-
+    
+    train_X_ecog = pd.DataFrame(train_X_ecog)
     ecogData = {}
     for idx in range(len(breakPoint) - 1):
         sentence = util.SentenceAdjustment(sentences[idx]) # helper function: adjust the sentence format to be readable

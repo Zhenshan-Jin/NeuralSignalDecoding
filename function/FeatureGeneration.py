@@ -6,7 +6,7 @@ Created on Sat Feb 11 16:49:24 2017
 @author: zhenshan
 """
 import pandas as pd
-import unitFeature
+import numpy as np
 import util
 import SentenceSegmentation
 
@@ -29,8 +29,9 @@ def FeatureDF(ecogTrain, sentenceTrain, nodeIdx, frequency, featureList, rawInte
                 
             colname = [str(nodeIdx_) + " " + frequency[freqIdx_] + " " + feat for feat in featureList]
             featureDF[colname] = subFeatureDF.drop(['phone name'], axis = 1)
-            
-    return featureDF
+        
+    
+    return featureDF.dropna()# Remove observations with nan
 
 
 def FeatureDF_Helper(featureList, sentences, ecogSlice, timeIntervals):
@@ -69,7 +70,7 @@ def FeatureGenerator(dataSeries, featureList):
     '''Generate features for unit phone series'''
     if 'mean' in featureList:
         if len(dataSeries) != 0:
-            mean_ = float(unitFeature.Mean(dataSeries))
+            mean_ = float(Mean(dataSeries))
         else:
             mean_ = None
     else: 
@@ -77,4 +78,7 @@ def FeatureGenerator(dataSeries, featureList):
     
     return [mean_]
 
+
+def Mean(dataSeries):
+    return np.mean(dataSeries)
     
