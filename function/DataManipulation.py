@@ -42,7 +42,8 @@ def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
     phoneSegmentation = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits_, ecogSeries, timeInterval_)
     silence = pd.Series(name = ecogSeries.name)
     for sil in phoneSegmentation['sil']:
-        silence = silence.append(sil['signalData'])
+        if sil['signalData'].index[0] == 0 :
+            silence = silence.append(sil['signalData'])
     silenceMean = float(np.mean(silence))
     ecogSeriesScaled = (ecogSeries - silenceMean)/silenceMean
     
