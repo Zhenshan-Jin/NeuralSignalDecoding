@@ -45,12 +45,19 @@ ecogTrainScaled = DataManipulation.ScalingBySilence(ecogTrain, rawIntervals)
 # Feature Generation
 #==============================================================================
 # parameters
-featureList = ['mean'] # take mean as an example
-nodeIdx = [0] # start from 0 to 69(70 in total)
-frequency = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma'] # name of frequencies
+#featureList = ['mean'] # take mean as an example
+#nodeIdx = [0] # start from 0 to 69(70 in total)
+#frequency = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma'] # name of frequencies
 # Generation
-featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
+#featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
 
+for i in range(0,70):
+    featureList = ['mean']
+    nodeIdx = [i] # start from 0 to 69(70 in total)
+    frequency = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']# ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']
+    featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
+    filename = "NODE%d.csv" %i
+    featureDF.to_csv(filename)
 
 #==============================================================================
 # Data Visualization (Visualized by Dimension reduciton)
