@@ -1,6 +1,6 @@
 rm(list=ls())
 library(MASS)
-setwd('F:\\BCM\\SENTENCE\\CODE\\NeuralSignalDecoding')
+setwd('C:\\Users\\yangy_000\\Dropbox\\BAYLOR\\TEMP\\NeuralSignalDecoding')
 for(j in 0:69)
 {
   fname <- paste0("NODE",j,".csv")
@@ -12,7 +12,7 @@ for(j in 0:69)
   {
     feature[,i] <- tapply(trial[,i + 2],trial$phone.name,mean)
   }
-  rfname <- paste0('F:\\BCM\\SENTENCE\\CODE\\NeuralSignalDecoding\\FEATURE_',fname)
+  rfname <- paste0('C:\\Users\\yangy_000\\Dropbox\\BAYLOR\\TEMP\\NeuralSignalDecoding\\FEATURE_',fname)
   write.csv(feature,rfname)
 }
 #############

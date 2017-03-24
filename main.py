@@ -56,7 +56,7 @@ for i in range(0,70):
     nodeIdx = [i] # start from 0 to 69(70 in total)
     frequency = ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']# ['Delta', 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']
     featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
-    filename = "NODE%d.csv" %i
+    filename = "C:/Users/yangy_000/Dropbox/BAYLOR/TEMP/NeuralSignalDecoding/NODE%d.csv" %i
     featureDF.to_csv(filename)
 
 #==============================================================================

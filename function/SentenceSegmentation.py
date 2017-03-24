@@ -51,9 +51,11 @@ def SplitPoint(rawTimeInterval_, neuralSignalLen):
     '''generate the splitting points for each phone in the sentence by proportion'''
     rawTimeInterval_.ix[:,[0,1]] = rawTimeInterval_.ix[:,[0,1]].apply(pd.to_numeric) # transform string to number
     point = rawTimeInterval_.ix[:,0]/100000.0
-    point = point.append(pd.Series([int(rawTimeInterval_.ix[rawTimeInterval_.shape[0] - 1,1])/100000.0]))
-    proportion = np.cumsum(point/sum(point))
+    totalLength = int(rawTimeInterval_.ix[rawTimeInterval_.shape[0] - 1,1])/100000.0
+    point = point.append(pd.Series([totalLength]))
+    proportion = np.cumsum(point.diff(1)[1:]/totalLength)
     phoneTimes = [round(x) for x in list(proportion * neuralSignalLen)]
+    phoneTimes.insert(0, 0)
     
     return phoneTimes
 
