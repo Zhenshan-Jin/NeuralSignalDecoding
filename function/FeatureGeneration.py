@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Feb 11 16:49:24 2017
-
 @author: zhenshan
 """
 import pandas as pd
 import numpy as np
 import util
 import SentenceSegmentation
+#visulization
+import matplotlib.pyplot as plt
+
 
 
 def FeatureDF(ecogTrain, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals):
@@ -41,11 +43,11 @@ def FeatureDF_Helper(featureList, sentences, ecogSlice, timeIntervals):
     for i in featureList: colName.append(i) 
     
     totalFeatureDf = pd.DataFrame(columns = colName)
-    for senIdx in range(0,len(sentences)):
+    for sen in sentences:
         '''Create the feacture matrix for each sentence'''
-        sentenceAdj = util.SentenceAdjustment(sentences[senIdx])
+        sentenceAdj = util.SentenceAdjustment(sen)
         # Ecog data
-        ecogSeries = ecogSlice[str(senIdx)]
+        ecogSeries = ecogSlice[sentenceAdj]
         # Ecog's phone split point
         timeInterval = timeIntervals[sentenceAdj] 
         phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, len(ecogSeries))
@@ -81,4 +83,26 @@ def FeatureGenerator(dataSeries, featureList):
 
 def Mean(dataSeries):
     return np.mean(dataSeries)
+
+
+def FeatureVisualCheck(featureDF_):
+    '''Checking scaling accuracy: first sil phone mean is 0'''
+    featureValue = featureDF_.ix[:,1:featureDF_.shape[1]].apply(np.mean, axis = 1)
+    phoneList = list(featureDF_.ix[:,0])
     
+    scalingSilList = list()
+    
+    for idx, val in enumerate(phoneList):
+        if idx + 1 < len(phoneList):
+            if phoneList[idx + 1] == 'sil' and val == 'sil':
+                scalingSilVal = featureValue.iloc[idx]
+                if scalingSilVal < 1e-3:
+                    scalingSilVal = 0
+                    scalingSilList.append(scalingSilVal)   
+    
+    plt.hist(scalingSilList)
+    plt.title("Gaussian Histogram")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+    
+    print(pd.DataFrame(scalingSilList).describe())

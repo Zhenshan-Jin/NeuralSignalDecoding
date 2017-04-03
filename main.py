@@ -40,6 +40,20 @@ rawIntervals = load.loadPhone() # raw split point data
 #==============================================================================
 ecogTrainScaled = DataManipulation.ScalingBySilence(ecogTrain, rawIntervals)
 
+#### Scaling Testing
+expSentence = 'Doris_ordered_twelve_white_catsAV_RMS'
+#All
+plot = False
+scalingTest = list()
+for colIdx in range(420):
+    result = DataManipulation.ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot)
+    scalingTest.append(result)
+scalingTest.count(True) == len(scalingTest)
+
+#Individual
+plot = True
+colIdx = 0
+DataManipulation.ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot)
 
 #==============================================================================
 # Feature Generation
@@ -58,6 +72,16 @@ for i in range(0,70):
     featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
     filename = "C:/Users/yangy_000/Dropbox/BAYLOR/TEMP/NeuralSignalDecoding/NODE%d.csv" %i
     featureDF.to_csv(filename)
+
+
+#### Feature Testing(Only take one node with one frequency for example)
+featureList = ['mean']
+nodeIdx = [0]
+frequency = ['Delta']#, 'Theta', 'Alpha' ,'Beta' ,'Low Gamma', 'High Gamma']
+# Generation
+featureDF = FeatureGeneration.FeatureDF(ecogTrainScaled, sentenceTrain, nodeIdx, frequency, featureList, rawIntervals)
+# Accuracy testing
+FeatureGeneration.FeatureVisualCheck(featureDF)
 
 #==============================================================================
 # Data Visualization (Visualized by Dimension reduciton)
