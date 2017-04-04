@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 
 
 
+
 def ScalingBySilence(ecogTrain, rawIntervals):
     '''Scaling data frame by calculating the percentage change compared to sil mean'''
     try:
@@ -54,7 +55,97 @@ def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
     
     return ecogSeriesScaled
 
-def ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot):
+
+def PhoneLabeling(ecogTrainScaled, rawIntervals):
+    timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)
+    ecogTrainScaledLabeled = {}
+    for sent, df in ecogTrainScaled.items():
+        timeInterval = timeIntervals[sent] 
+        phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, df.shape[0])
+        # Ecog's phone interval 
+        tempSeries = df.ix[:,0]
+        phoneSegmentation = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits, tempSeries, timeInterval)
+        
+        # Feature matrix creation
+        colNames = ["phoneIndex", "phoneName", "timeIndex"]
+        sentenceFeatureDf = pd.DataFrame(columns = colNames)
+        phoneIdx = 0
+        base = 0
+        for word in phoneSegmentation:
+            wordSegmentation = phoneSegmentation[word]
+            subPhoneIdx = 0
+            for phone in wordSegmentation:
+                sentenceFeaturedfTemp = pd.DataFrame()
+                sentenceFeaturedfTemp["phoneIndex"] = [phoneIdx] * phone["signalData"].size
+                phoneName = ''.join([i for i in phone["phone"] if not i.isdigit()])
+                sentenceFeaturedfTemp["phoneName"] = [phoneName] * phone["signalData"].size
+                sentenceFeaturedfTemp["timeIndex"] = phone["signalData"].index.values
+                if subPhoneIdx == 0 and phone == 'sil':
+                    base = phone["signalData"].index.values.tolist()[0]
+                sentenceFeatureDf = sentenceFeatureDf.append(sentenceFeaturedfTemp)
+                subPhoneIdx += 1
+                phoneIdx += 1
+        sentenceFeatureDf["timeIndex"] = sentenceFeatureDf["timeIndex"] - base
+        sentenceFeatureDf = sentenceFeatureDf.reset_index()
+        df = df.reset_index()
+        del sentenceFeatureDf["index"]
+        del df["index"]
+
+        sentenceFeatureDf = pd.concat([sentenceFeatureDf,df], axis = 1)
+        ecogTrainScaledLabeled[sent] = sentenceFeatureDf        
+        
+    return ecogTrainScaledLabeled
+
+
+def ExportScalingData(ecogTrainScaledLabled):
+    '''export data to default data folder ./data/'''
+    frames = list()
+    sentences = pd.DataFrame(columns = ['sentence'])
+    sentIndex = 0
+    for sent, df in ecogTrainScaledLabled.items():
+        df["sentenceIndex"] = np.array([sentIndex] * df.shape[0])
+        frames.append(df)
+        sentences = sentences.append({'sentence':sent}, ignore_index=True)
+        sentIndex += 1
+    
+    result = pd.concat(frames)
+    cols = result.columns.tolist()
+    cols = cols[-1:] + cols[:-1]
+    
+    result = result[cols]
+    dataFilePath = "data/ecogTrainScaledLabeled.csv"
+    result.to_csv(dataFilePath,  index=False)
+    
+    sentences.index.name  = 'index'
+    sentenceFilePath = "data/sentence_N_IndexScaledLabled"
+    sentences.to_csv(sentenceFilePath)
+
+
+def ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx = None, plot = False):
+    '''Check the accuracy for each sentence
+       plot is True, then colIdx is necessary'''
+    if isTotal:
+        scalingTest = list()
+        for colIdx in range(420):
+            result = ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
+            scalingTest.append(result)
+        if scalingTest.count(True) == len(scalingTest):
+            print('The scaling is correct')
+        else:
+            print('Error: The scaling is wrong')
+            
+        return scalingTest
+    
+        if plot:
+            ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
+            
+    else:
+        if plot:
+            ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
+        
+        
+        
+def ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot):
     '''Cheking the scaling accuracy: if the original phone mean > first scaling sil mean: scaling phone mean > 0
                                      else: scaling phone mean < 0
        return: true/false, whether scaling correctly'''
@@ -94,7 +185,7 @@ def ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot):
                          color=scaleColor,
                          label='Scaled')
         
-        plt.axhline(y = scalingSil, c="yellow",linewidth=1,zorder=0, label = 'Scaling Silence')
+        plt.axhline(y = scalingSil, c="black",linewidth=1,zorder=0, label = 'Scaling Silence')
         
         plt.xlabel('Phone')
         plt.ylabel('Mean')
@@ -106,7 +197,7 @@ def ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot):
         plt.show()
     
     # Value check
-    silZero = (expScale[label.index('sil')] < 1e-03)
+    silZero = (expScale[label.index('sil')] < 1e-02)
     featurePN = list()
     for idx, val in enumerate(expScale):
         if(expOrig[idx] - scalingSil) * val >= 0:

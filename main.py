@@ -38,22 +38,23 @@ rawIntervals = load.loadPhone() # raw split point data
 #==============================================================================
 # Data Scaling(Parallelized)
 #==============================================================================
+# Scaling
 ecogTrainScaled = DataManipulation.ScalingBySilence(ecogTrain, rawIntervals)
 
-#### Scaling Testing
+# Scaling Testing
 expSentence = 'Doris_ordered_twelve_white_catsAV_RMS'
 #All
-plot = False
-scalingTest = list()
-for colIdx in range(420):
-    result = DataManipulation.ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot)
-    scalingTest.append(result)
-scalingTest.count(True) == len(scalingTest)
-
+isTotal = True
+result = DataManipulation.ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx = None, plot = False)
 #Individual
-plot = True
-colIdx = 0
-DataManipulation.ScalingVisualCheck(ecogTrain, rawIntervals, expSentence, colIdx, plot)
+isTotal = False; plot = True; colIdx = 0
+DataManipulation.ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx, plot)
+
+# phone labeling
+ecogTrainScaledLabled = DataManipulation.PhoneLabeling(ecogTrainScaled, rawIntervals)
+
+# Output
+DataManipulation.ExportScalingData(ecogTrainScaledLabled)
 
 #==============================================================================
 # Feature Generation

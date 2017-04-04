@@ -95,10 +95,7 @@ def FeatureVisualCheck(featureDF_):
     for idx, val in enumerate(phoneList):
         if idx + 1 < len(phoneList):
             if phoneList[idx + 1] == 'sil' and val == 'sil':
-                scalingSilVal = featureValue.iloc[idx]
-                if scalingSilVal < 1e-3:
-                    scalingSilVal = 0
-                    scalingSilList.append(scalingSilVal)   
+                scalingSilList.append(featureValue.iloc[idx])   
     
     plt.hist(scalingSilList)
     plt.title("Gaussian Histogram")
