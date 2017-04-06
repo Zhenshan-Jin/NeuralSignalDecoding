@@ -64,7 +64,7 @@ def NeuralSignalSegmentation(phoneTimes_, neuralSignal_, timeInterval_):
     '''Generate series for phones in each word'''
     phoneSegmentation_ = {} # dict{word: [{phone1: signalData}, {phone2: signalData},......]}
     for phoneIdx in range(timeInterval_.shape[0]):
-        signalData = neuralSignal_[phoneTimes_[phoneIdx]:(phoneTimes_[phoneIdx + 1] - 1)]
+        signalData = neuralSignal_[(phoneTimes_[phoneIdx]):(phoneTimes_[phoneIdx + 1])]
         phone = timeInterval_.ix[phoneIdx, 2]
         word = timeInterval_.ix[phoneIdx, 3]
         phoneDataDict = {"phone":phone, "signalData": signalData}

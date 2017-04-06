@@ -117,7 +117,7 @@ def ExportScalingData(ecogTrainScaledLabled):
     result.to_csv(dataFilePath,  index=False)
     
     sentences.index.name  = 'index'
-    sentenceFilePath = "data/sentence_N_IndexScaledLabled"
+    sentenceFilePath = "data/sentence_N_IndexScaledLabled.txt"
     sentences.to_csv(sentenceFilePath)
 
 

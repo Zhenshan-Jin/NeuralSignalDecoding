@@ -13,7 +13,7 @@ import h5py
 import util # user-defined module
 
 
-def loadPhone():
+def loadPhone(fileName):
     '''Reading the raw phone data for each sentence from .txt'''
     # switch to data directory
     owd = os.getcwd()
@@ -22,7 +22,7 @@ def loadPhone():
 
     # read data
     try:
-        rawData_ = open('AlignedTime.txt').read()
+        rawData_ = open(fileName).read()
         os.chdir(owd) # switch back to base directory
     except IOError:
         os.chdir(owd)

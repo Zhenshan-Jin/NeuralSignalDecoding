@@ -6,13 +6,6 @@ Created on Fri Feb 10 15:59:25 2017
 @author: zhenshan
 """
 
-'''
-@(1)the original data set is fairly large with 2.1GB, here is just very small part of data. 
- Therefore, the visualization and classification performance is not very interesting.
- (2) If the size of dataset is increasing more, distributed computation(Hadoop/Spark) would be the next step
-
-@Total Running time: 10 seconds
-'''
 
 # Add function/data folder into module searching path
 import sys
@@ -32,8 +25,9 @@ import Classification
 #==============================================================================
 sentenceTrain = load.loadOrderedSentence()# sentence
 ecogTrain = load.loadEcog()# ecog data(neural signal)
-rawIntervals = load.loadPhone() # raw split point data 
 
+fileName = 'AlignedTime.txt'
+rawIntervals = load.loadPhone(fileName) # raw split point data 
 
 #==============================================================================
 # Data Scaling(Parallelized)
