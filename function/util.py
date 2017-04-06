@@ -20,6 +20,7 @@ def SentenceAdjustment(sentence):
         
     return sentenceAdj
 
+
 def EcogSlicing(ecogDic, nodeIdx, freqIdx):
     '''Select the frequency&node col from total 420 cols for each sentence'''
     sliceIdx = freqIdx * 70 + nodeIdx
@@ -27,3 +28,4 @@ def EcogSlicing(ecogDic, nodeIdx, freqIdx):
     for sent in ecogDic:
         ecogSlice[sent] = ecogDic[sent].iloc[:,[sliceIdx]]
     return ecogSlice
+
