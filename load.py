@@ -46,6 +46,22 @@ def loadOrderedSentence():
 
     return sentence
 
+def loadOrderedSentenceNew():
+    '''Reading 210 sentences from .txt'''
+    # switch to data directory
+    owd = os.getcwd()
+    dataDir = owd + '/data/NewData'
+    os.chdir(dataDir)
+    
+    # read data
+    try:
+        sentence = open('Sentence.txt',"r").readlines()
+        os.chdir(owd) # switch back to base directory
+    except IOError:
+        os.chdir(owd)
+    
+    return sentence
+
 
 def loadEcog():
     '''Function: Create Dictionary for each sentence with corresponding phone'''
@@ -97,3 +113,109 @@ def loadEcog():
         ecogData[sentence] = train_X_ecog[breakPoint[idx] : breakPoint[idx + 1]]
         
     return ecogData
+
+
+def loadEcogNew():
+    '''Function: Create Dictionary for each sentence(210) with corresponding phone'''
+    '''Method: Reading large dataset by pandas chunck and store in HDF5'''
+    sentences = loadOrderedSentenceNew()
+    # switch to data directory
+    owd = os.getcwd()
+    dataDir = owd + '/data/NewData'
+    os.chdir(dataDir)
+    
+    # read data
+    breakPoint = [int(index) for index in open('breakpoint.txt').readlines()]
+    breakPoint.insert(0,0)
+    try:
+#        timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
+        #Read data from HDF5 database
+        h5f_read = h5py.File('ecog.h5','r')
+        X_ecog = np.array(h5f_read.get('data'))
+        X_ecog = pd.DataFrame(X_ecog)
+        
+        os.chdir(owd) # switch back to base directory
+    except IOError:
+        print('create a new HDF5 database for training data')
+        try:
+            # Reading large dataset by chunck and store in HDF5
+            h5f = h5py.File('ecog.h5', 'w')
+            
+            chunksize = 567 # dataset size = 65205; chunk number = 115
+            dims = 70 # variable number in dataset
+            reader = pd.read_csv('X_ecog.csv', chunksize=chunksize, header=None)
+            X_ecog = np.empty((0,dims)).astype(np.float16)
+            for chunk in reader:
+                # saving memory by customerized data type
+                d = np.asarray(chunk.ix[:,:]).astype(np.float16)
+                X_ecog = np.vstack((X_ecog, d))
+
+            h5f.create_dataset('data', data=X_ecog, compression="gzip")
+            h5f.close()
+    
+            os.chdir(owd) 
+        except IOError:
+            print('Unknown error')
+            os.chdir(owd)
+    
+    X_ecog = pd.DataFrame(X_ecog)
+    ecogData = {}
+    for idx in range(len(breakPoint) - 1):
+        sentence = util.SentenceAdjustment(sentences[idx]) # helper function: adjust the sentence format to be readable
+        ecogData[sentence] = X_ecog[breakPoint[idx] : breakPoint[idx + 1]]
+        
+    return ecogData
+
+
+
+def loadEcogSilence():
+    '''Function: Create Dictionary for each sentence(210) with corresponding phone'''
+    '''Method: Reading large dataset by pandas chunck and store in HDF5'''
+    sentences = loadOrderedSentenceNew()
+    # switch to data directory
+    owd = os.getcwd()
+    dataDir = owd + '/data/NewData'
+    os.chdir(dataDir)
+    
+    # read data
+    breakPoint = [int(index) for index in open('silenceBreakpoint.txt').readlines()]
+    breakPoint.insert(0,0)
+    
+    try:
+#        timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
+        #Read data from HDF5 database
+        h5f_read = h5py.File('ecog_sil.h5','r')
+        X_ecog_sil = np.array(h5f_read.get('data'))
+        X_ecog_sil = pd.DataFrame(X_ecog_sil)
+        
+        os.chdir(owd) # switch back to base directory
+    except IOError:
+        print('create a new HDF5 database for training data')
+        try:
+            # Reading large dataset by chunck and store in HDF5
+            h5f = h5py.File('ecog_sil.h5', 'w')
+            
+            chunksize = 315 # dataset size = 65205; chunk number = 115
+            dims = 70 # variable number in dataset
+            reader = pd.read_csv('X_ecog_sil.csv', chunksize=chunksize, header=None)
+            X_ecog_sil = np.empty((0,dims)).astype(np.float16)
+            for chunk in reader:
+                # saving memory by customerized data type
+                d = np.asarray(chunk.ix[:,:]).astype(np.float16)
+                X_ecog_sil = np.vstack((X_ecog_sil, d))
+
+            h5f.create_dataset('data', data=X_ecog_sil, compression="gzip")
+            h5f.close()
+    
+            os.chdir(owd) 
+        except IOError:
+            print('Unknown error')
+            os.chdir(owd)
+    
+    X_ecog_sil = pd.DataFrame(X_ecog_sil)
+    ecogDataSil = {}
+    for idx in range(len(breakPoint) - 1):
+        sentence = util.SentenceAdjustment(sentences[idx]) # helper function: adjust the sentence format to be readable
+        ecogDataSil[sentence] = X_ecog_sil[breakPoint[idx] : breakPoint[idx + 1]]
+        
+    return ecogDataSil

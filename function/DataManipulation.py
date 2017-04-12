@@ -40,6 +40,28 @@ def ScalingBySilence(ecogTrain, rawIntervals):
         
     return ecogTrainScaled
 
+def ScalingBySilenceNew(ecogNew, ecogSilence, rawIntervals):
+    '''Scaling data frame by calculating the percentage change compared to sil mean'''
+    try:
+        ecogNewScaled = pickle.load( open( "data/NewData/ecogNewScaled.p", "rb" ) )
+    except IOError:
+        timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
+        ecogNewScaled = {}
+        for sent in ecogNew:
+            try:
+                timeInterval = timeIntervals[sent] 
+                ecogSilenceSent = ecogSilence[sent]
+                phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, ecogNew[sent].shape[0])
+                # Parallel Computing 
+                ScalingHelperPartial = partial(ScalingHelperNew, ecogSilenceSent_ = ecogSilenceSent, phoneSplits_ = phoneSplits, timeInterval_ = timeInterval)
+                partResult = Parallel(n_jobs=mp.cpu_count())(delayed(ScalingHelperPartial)(colName, col) for colName, col in ecogNew[sent].iteritems())
+                ecogNewScaled[sent] = pd.concat(partResult, axis = 1)
+            except:
+                pass
+        pickle.dump(ecogNewScaled, open( "data/NewData/ecogNewScaled.p", "wb" ))
+        
+    return ecogNewScaled
+
 
 def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
     '''Getting scaled data for each of 420 frequencies'''
@@ -47,6 +69,21 @@ def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
     silence = pd.Series(name = ecogSeries.name)
 #   Scaling by silence at the beginning
     silence = silence.append(phoneSegmentation['sil'][0]['signalData'])
+#   Scaling by all the silence in the sentence
+#    for sil in phoneSegmentation['sil']:
+#        silence = silence.append(sil['signalData'])
+    silenceMean = float(np.mean(silence))
+    ecogSeriesScaled = (ecogSeries - silenceMean)/silenceMean
+    
+    return ecogSeriesScaled
+
+
+def ScalingHelperNew(colNames, ecogSeries, ecogSilenceSent_, phoneSplits_, timeInterval_):
+    '''Getting scaled data for each of 70 frequencies'''
+#    phoneSegmentation = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits_, ecogSeries, timeInterval_)
+    silence = ecogSilenceSent_.ix[:,colNames]
+#   Scaling by silence at the beginning
+#    silence = silence.append(phoneSegmentation['sil'][0]['signalData'])
 #   Scaling by all the silence in the sentence
 #    for sil in phoneSegmentation['sil']:
 #        silence = silence.append(sil['signalData'])
@@ -119,6 +156,31 @@ def ExportScalingData(ecogTrainScaledLabled):
     sentences.index.name  = 'index'
     sentenceFilePath = "data/sentence_N_IndexScaledLabled.txt"
     sentences.to_csv(sentenceFilePath)
+    
+
+def ExportScalingDataNew(ecogNewScaledLabled):
+    '''export data to default data folder ./data/NewData'''
+    frames = list()
+    sentences = pd.DataFrame(columns = ['sentence'])
+    sentIndex = 0
+    for sent, df in ecogNewScaledLabled.items():
+        df["sentenceIndex"] = np.array([sentIndex] * df.shape[0])
+        frames.append(df)
+        sentences = sentences.append({'sentence':sent}, ignore_index=True)
+        sentIndex += 1
+    
+    result = pd.concat(frames)
+    cols = result.columns.tolist()
+    cols = cols[-1:] + cols[:-1]
+    
+    result = result[cols]
+    dataFilePath = "data/NewData/ecogNewScaledLabeled.csv"
+    result.to_csv(dataFilePath,  index=False)
+    
+    sentences.index.name  = 'index'
+    sentenceFilePath = "data/NewData/sentence_N_IndexScaledLabled.txt"
+    sentences.to_csv(sentenceFilePath, index = False, header = False)
+
 
 
 def ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx = None, plot = False):

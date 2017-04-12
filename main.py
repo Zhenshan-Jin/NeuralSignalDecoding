@@ -19,6 +19,41 @@ import DataManipulation
 import FeatureGeneration
 import Visualization
 import Classification
+import ReformatRawData
+
+#==============================================================================
+# Data Refromating(new)
+#==============================================================================
+ReformatRawData.ReformatRawData()
+
+#==============================================================================
+# Data Loading(new)
+#==============================================================================
+sentenceNew = load.loadOrderedSentenceNew()
+ecogNew = load.loadEcogNew()
+ecogSilence = load.loadEcogSilence()
+
+fileName = 'AlignedTime.txt'
+rawIntervals = load.loadPhone(fileName) # raw split point data 
+
+##Visualization
+#import matplotlib.pyplot as plt
+#expSentence = 'Doris_ordered_twelve_white_catsAV_RMS'
+#plt.plot(ecogNew[expSentence].ix[:,0].reset_index(drop = True))
+#plt.plot(ecogSilence[expSentence].ix[:,0].reset_index(drop = True))
+
+#==============================================================================
+# Data Scaling(New; Parallelized)
+#==============================================================================
+# Scaling
+ecogNewScaled = DataManipulation.ScalingBySilenceNew(ecogNew, ecogSilence, rawIntervals)
+
+# phone labeling
+ecogNewScaledLabled = DataManipulation.PhoneLabeling(ecogNewScaled, rawIntervals)
+
+# Output
+DataManipulation.ExportScalingDataNew(ecogNewScaledLabled)
+
 
 #==============================================================================
 # Data Loading(pandas trunk reading & HDF5)
@@ -28,6 +63,7 @@ ecogTrain = load.loadEcog()# ecog data(neural signal)
 
 fileName = 'AlignedTime.txt'
 rawIntervals = load.loadPhone(fileName) # raw split point data 
+
 
 #==============================================================================
 # Data Scaling(Parallelized)
