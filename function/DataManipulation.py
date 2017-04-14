@@ -73,7 +73,7 @@ def ScalingHelper(ecogSeries, phoneSplits_, timeInterval_):
 #    for sil in phoneSegmentation['sil']:
 #        silence = silence.append(sil['signalData'])
     silenceMean = float(np.mean(silence))
-    ecogSeriesScaled = (ecogSeries - silenceMean)/silenceMean
+    ecogSeriesScaled = 100 * (ecogSeries - silenceMean)/silenceMean
     
     return ecogSeriesScaled
 
