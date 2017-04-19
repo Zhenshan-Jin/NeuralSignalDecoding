@@ -49,9 +49,10 @@ def ScalingBySilenceNew(ecogNew, ecogSilence, rawIntervals):
         ecogNewScaled = {}
         for sent in ecogNew:
             try:
+                ecogNewSpeech = ecogNew[sent].ix[150:,:]
                 timeInterval = timeIntervals[sent] 
                 ecogSilenceSent = ecogSilence[sent]
-                phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, ecogNew[sent].shape[0])
+                phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, ecogNewSpeech.shape[0])
                 # Parallel Computing 
                 ScalingHelperPartial = partial(ScalingHelperNew, ecogSilenceSent_ = ecogSilenceSent, phoneSplits_ = phoneSplits, timeInterval_ = timeInterval)
                 partResult = Parallel(n_jobs=mp.cpu_count())(delayed(ScalingHelperPartial)(colName, col) for colName, col in ecogNew[sent].iteritems())
@@ -88,7 +89,7 @@ def ScalingHelperNew(colNames, ecogSeries, ecogSilenceSent_, phoneSplits_, timeI
 #    for sil in phoneSegmentation['sil']:
 #        silence = silence.append(sil['signalData'])
     silenceMean = float(np.mean(silence))
-    ecogSeriesScaled = (ecogSeries - silenceMean)/silenceMean
+    ecogSeriesScaled = 100 * (ecogSeries - silenceMean)/silenceMean
     
     return ecogSeriesScaled
 
@@ -128,6 +129,65 @@ def PhoneLabeling(ecogTrainScaled, rawIntervals):
         del sentenceFeatureDf["index"]
         del df["index"]
 
+        sentenceFeatureDf = pd.concat([sentenceFeatureDf,df], axis = 1)
+        ecogTrainScaledLabeled[sent] = sentenceFeatureDf        
+        
+    return ecogTrainScaledLabeled
+
+
+def PhoneLabelingNew(ecogNewScaled, rawIntervals):
+    timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)
+    ecogTrainScaledLabeled = {}
+    for sent, df in ecogNewScaled.items():
+        dfSpeech = df.ix[150:, :]
+        timeInterval = timeIntervals[sent] 
+        phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, dfSpeech.shape[0])
+        # Ecog's phone interval 
+        tempSeries = dfSpeech.ix[:,0]
+        phoneSegmentation = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits, tempSeries, timeInterval)
+        
+        # Feature matrix creation
+        colNames = ["phoneIndex", "phoneName", "timeIndex"]
+        sentenceFeatureDf = pd.DataFrame(columns = colNames)
+        phoneIdx = 0
+        base = 0
+        for word in phoneSegmentation:
+            wordSegmentation = phoneSegmentation[word]
+            subPhoneIdx = 0
+            for phone in wordSegmentation:
+                sentenceFeaturedfTemp = pd.DataFrame()
+                sentenceFeaturedfTemp["phoneIndex"] = [phoneIdx] * phone["signalData"].size
+                phoneName = ''.join([i for i in phone["phone"] if not i.isdigit()])
+                sentenceFeaturedfTemp["phoneName"] = [phoneName] * phone["signalData"].size
+                sentenceFeaturedfTemp["timeIndex"] = phone["signalData"].index.values
+                if subPhoneIdx == 0 and phone == 'sil':
+                    base = phone["signalData"].index.values.tolist()[0]
+                sentenceFeatureDf = sentenceFeatureDf.append(sentenceFeaturedfTemp)
+                subPhoneIdx += 1
+                phoneIdx += 1
+        sentenceFeatureDf["timeIndex"] = sentenceFeatureDf["timeIndex"] - base
+        sentenceFeatureDFNonSpeech = pd.DataFrame(dict(zip(colNames,[[-1 for i in range(150)],['silNoneSpeech' for i in range(150)],[i for i in range(150)]])))
+        sentenceFeatureDf = pd.concat([sentenceFeatureDFNonSpeech, sentenceFeatureDf], axis = 0)
+        sentenceFeatureDf = sentenceFeatureDf.reset_index()
+        dfSpeech = dfSpeech.reset_index()
+        del sentenceFeatureDf["index"]
+        del dfSpeech["index"]
+        
+        # Append non speech sil to the data frame
+        sentenceFeatureDf = sentenceFeatureDf.sort_values(by = 'timeIndex').reset_index()
+        del sentenceFeatureDf["index"]
+        # Create right phone order
+        preIndex = None
+        index = -2
+        newIndex = []
+        for i in sentenceFeatureDf['phoneIndex']:
+            if i != preIndex:
+                index += 1
+                preIndex = i
+            newIndex.append(index)
+            
+        sentenceFeatureDf['phoneIndex'] = newIndex
+        
         sentenceFeatureDf = pd.concat([sentenceFeatureDf,df], axis = 1)
         ecogTrainScaledLabeled[sent] = sentenceFeatureDf        
         
@@ -183,109 +243,3 @@ def ExportScalingDataNew(ecogNewScaledLabled):
 
 
 
-def ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx = None, plot = False):
-    '''Check the accuracy for each sentence
-       plot is True, then colIdx is necessary'''
-    if isTotal:
-        scalingTest = list()
-        for colIdx in range(420):
-            result = ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
-            scalingTest.append(result)
-        if scalingTest.count(True) == len(scalingTest):
-            print('The scaling is correct')
-        else:
-            print('Error: The scaling is wrong')
-            
-        return scalingTest
-    
-        if plot:
-            ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
-            
-    else:
-        if plot:
-            ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot)
-        
-        
-        
-def ScalingVisualCheckPerCol(ecogTrain, rawIntervals, expSentence, colIdx, plot):
-    '''Cheking the scaling accuracy: if the original phone mean > first scaling sil mean: scaling phone mean > 0
-                                     else: scaling phone mean < 0
-       return: true/false, whether scaling correctly'''
-    timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
-    timeInterval = timeIntervals[expSentence] 
-    phoneSplits = SentenceSegmentation.SplitPoint(timeInterval, ecogTrain[expSentence].shape[0])
-    expSeries = ecogTrain[expSentence].ix[:,colIdx]
-    expScaledSeries = ScalingHelper(expSeries, phoneSplits, timeInterval)
-    phoneSegmentationOrig = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits, expSeries, timeInterval)
-    phoneSegmentationScaled = SentenceSegmentation.NeuralSignalSegmentation(phoneSplits, expScaledSeries, timeInterval)
-    
-    featureDfOrig = ScalingVisualCheck_Helper(phoneSegmentationOrig)
-    featureDfScaled = ScalingVisualCheck_Helper(phoneSegmentationScaled)
-    
-    label = list(featureDfScaled.ix[:,0])
-    
-    expOrig = list(featureDfOrig.ix[:,1])
-    expScale = list(featureDfScaled.ix[:,1])
-    scalingSil = expOrig[label.index('sil')]
-
-    if plot:
-        # Graph check
-        fig, ax = plt.subplots()
-        index = np.arange(len(label))
-        bar_width = 0.35
-        opacity = 0.8
-        
-        scaleColor = ['red' if val > scalingSil else 'green' for val in expOrig]
-        
-        plt.bar(index, expOrig, bar_width,
-                         alpha=opacity,
-                         color= 'b',
-                         label='Original')
-        
-        plt.bar(index + bar_width, expScale, bar_width,
-                         alpha=opacity,
-                         color=scaleColor,
-                         label='Scaled')
-        
-        plt.axhline(y = scalingSil, c="black",linewidth=1,zorder=0, label = 'Scaling Silence')
-        
-        plt.xlabel('Phone')
-        plt.ylabel('Mean')
-        plt.title('Mean change after scaling')
-        plt.xticks(index + bar_width, label)
-        plt.legend()
-         
-        plt.tight_layout()
-        plt.show()
-    
-    # Value check
-    silZero = (expScale[label.index('sil')] < 1e-02)
-    featurePN = list()
-    for idx, val in enumerate(expScale):
-        if(expOrig[idx] - scalingSil) * val >= 0:
-            featurePN.append(True)
-        else:
-            featurePN.append(False)
-    
-    if featurePN.count(True) == len(featurePN) and silZero:
-        return True # Not scaling correctly
-    else:
-        return False
-
-
-def ScalingVisualCheck_Helper(phoneSegmentation_):
-    colName = ["phone name"]
-    featureList = ['mean'] 
-    for i in featureList: colName.append(i) 
-
-    sentenceFeatureDf = pd.DataFrame(columns = colName)
-    phoneIdx = 0
-    for word in phoneSegmentation_:
-        wordSegmentation = phoneSegmentation_[word]
-        for phone in wordSegmentation:
-            obsValue = FeatureGeneration.FeatureGenerator(phone["signalData"], featureList)
-            obsValue.insert(0, phone["phone"])
-            sentenceFeatureDf.loc[phoneIdx] = obsValue
-            phoneIdx += 1
-            
-    return sentenceFeatureDf.dropna()

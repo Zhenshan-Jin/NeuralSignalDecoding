@@ -20,14 +20,15 @@ import FeatureGeneration
 import Visualization
 import Classification
 import ReformatRawData
+import UserDefinedTest
 
 #==============================================================================
-# Data Refromating(new)
+# Data Refromating(new data)
 #==============================================================================
 ReformatRawData.ReformatRawData()
 
 #==============================================================================
-# Data Loading(new)
+# Data Loading(new data)
 #==============================================================================
 sentenceNew = load.loadOrderedSentenceNew()
 ecogNew = load.loadEcogNew()
@@ -39,17 +40,23 @@ rawIntervals = load.loadPhone(fileName) # raw split point data
 ##Visualization
 #import matplotlib.pyplot as plt
 #expSentence = 'Doris_ordered_twelve_white_catsAV_RMS'
-#plt.plot(ecogNew[expSentence].ix[:,0].reset_index(drop = True))
-#plt.plot(ecogSilence[expSentence].ix[:,0].reset_index(drop = True))
+#for i in range(70):
+#    speaking, = plt.plot(ecogNew[expSentence].ix[:,0].reset_index(drop = True))
+#    silence, = plt.plot(ecogSilence[expSentence].ix[:,0].reset_index(drop = True))
+#    plt.legend([speaking, silence],["Speaking neural signal", "Silence neural signal"])
+#    plt.savefig("path/to/saving/place")
 
 #==============================================================================
-# Data Scaling(New; Parallelized)
+# Data Scaling(new data; Parallelized)
 #==============================================================================
 # Scaling
 ecogNewScaled = DataManipulation.ScalingBySilenceNew(ecogNew, ecogSilence, rawIntervals)
+# UserDefinedTest.ScaledDataTestNew(ecogNewScaled)
+#for i in range(70):
+#    plt.plot(ecogNewScaled[expSentence].ix[:,i].reset_index(drop = True))
 
 # phone labeling
-ecogNewScaledLabled = DataManipulation.PhoneLabeling(ecogNewScaled, rawIntervals)
+ecogNewScaledLabled = DataManipulation.PhoneLabelingNew(ecogNewScaled, rawIntervals)
 
 # Output
 DataManipulation.ExportScalingDataNew(ecogNewScaledLabled)
@@ -78,14 +85,13 @@ isTotal = True
 result = DataManipulation.ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx = None, plot = False)
 #Individual
 isTotal = False; plot = True; colIdx = 0
-DataManipulation.ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx, plot)
+UserDefinedTest.ScalingVisualCheck(expSentence, ecogTrain, rawIntervals, isTotal, colIdx, plot)
 
 # phone labeling
 ecogTrainScaledLabled = DataManipulation.PhoneLabeling(ecogTrainScaled, rawIntervals)
 
 # Output
 DataManipulation.ExportScalingData(ecogTrainScaledLabled)
-
 #==============================================================================
 # Feature Generation
 #==============================================================================

@@ -127,13 +127,18 @@ def loadEcogNew():
     # read data
     breakPoint = [int(index) for index in open('breakpoint.txt').readlines()]
     breakPoint.insert(0,0)
+    
+    breakPointNonSpeech = [int(index) for index in open('silenceBreakpoint.txt').readlines()]
+    breakPointNonSpeech.insert(0,0)
+    
     try:
 #        timeIntervals = SentenceSegmentation.AlignmentPoint(rawIntervals)# create split point data frame
         #Read data from HDF5 database
         h5f_read = h5py.File('ecog.h5','r')
         X_ecog = np.array(h5f_read.get('data'))
-        X_ecog = pd.DataFrame(X_ecog)
-        
+        X_ecog_sil = np.array(h5f_read.get('dataNonspeech'))
+        h5f_read.close()
+
         os.chdir(owd) # switch back to base directory
     except IOError:
         print('create a new HDF5 database for training data')
@@ -149,8 +154,18 @@ def loadEcogNew():
                 # saving memory by customerized data type
                 d = np.asarray(chunk.ix[:,:]).astype(np.float16)
                 X_ecog = np.vstack((X_ecog, d))
-
+            
+            chunksizeNonSpeech = 315 # dataset size = 65205; chunk number = 115
+            dimsNonSpeech = 70 # variable number in dataset
+            readerNonSpeech = pd.read_csv('X_ecog_sil.csv', chunksize=chunksizeNonSpeech, header=None)
+            X_ecog_sil = np.empty((0,dimsNonSpeech)).astype(np.float16)
+            for chunkNonSpeech in readerNonSpeech:
+                # saving memory by customerized data type
+                dNonSpeech = np.asarray(chunkNonSpeech.ix[:,:]).astype(np.float16)
+                X_ecog_sil = np.vstack((X_ecog_sil, dNonSpeech))
+                
             h5f.create_dataset('data', data=X_ecog, compression="gzip")
+            h5f.create_dataset('dataNonspeech', data=X_ecog_sil, compression="gzip")
             h5f.close()
     
             os.chdir(owd) 
@@ -159,10 +174,15 @@ def loadEcogNew():
             os.chdir(owd)
     
     X_ecog = pd.DataFrame(X_ecog)
+    X_ecog_sil = pd.DataFrame(X_ecog_sil)
+
     ecogData = {}
     for idx in range(len(breakPoint) - 1):
         sentence = util.SentenceAdjustment(sentences[idx]) # helper function: adjust the sentence format to be readable
-        ecogData[sentence] = X_ecog[breakPoint[idx] : breakPoint[idx + 1]]
+        speechData = X_ecog[breakPoint[idx] : breakPoint[idx + 1]]
+        nonSpeechData = X_ecog_sil[breakPointNonSpeech[idx] : breakPointNonSpeech[idx + 1]]
+        totalData = pd.concat([nonSpeechData,speechData], axis = 0).reset_index().ix[:,1:]
+        ecogData[sentence] = totalData
         
     return ecogData
 
